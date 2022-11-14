@@ -49,10 +49,33 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var DumbRenderer = /** @class */ (function () {
     function DumbRenderer() {
     }
-    DumbRenderer.prototype.loadAssets = function () {
-        return __awaiter(this, void 0, void 0, function () { return __generator(this, function (_a) {
-            return [2 /*return*/];
-        }); });
+    DumbRenderer.prototype.loadImage = function (imageUrl) {
+        return __awaiter(this, void 0, void 0, function () {
+            var img;
+            return __generator(this, function (_a) {
+                img = new Image();
+                img.src = imageUrl;
+                return [2 /*return*/, img];
+            });
+        });
+    };
+    DumbRenderer.prototype.loadAssets = function (assets) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (res, rej) {
+                        // let imagesToLoad = 0;
+                        // const loadAsset = (imgUrl) => {
+                        //   imagesToLoad++;
+                        //   const img = new Image();
+                        //   img.src = imgUrl;
+                        //   return img;
+                        // };
+                        assets.forEach(function (asset) {
+                            // loadAsset(asset.url);
+                        });
+                    })];
+            });
+        });
     };
     DumbRenderer.prototype.setupCanvas = function (canvasProps) {
         return __awaiter(this, void 0, void 0, function () {

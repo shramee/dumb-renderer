@@ -1,3 +1,15 @@
+interface Asset {
+  id: string;
+  url: string;
+  states?: { [key: string]: string };
+}
+
+interface LoadedAsset {
+  id: string;
+  img: HTMLImageElement;
+  states?: { [key: string]: HTMLImageElement };
+}
+
 interface CanvasProps {
   h: number;
   w: number;
@@ -18,8 +30,20 @@ interface CanvasProps {
 class DumbRenderer {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D | null;
+  assets: { [key: string]: LoadedAsset };
 
-  async loadAssets() {}
+  async loadImage(imageUrl) {
+    var img = new Image();
+    img.src = imageUrl;
+    return img;
+  }
+
+  async loadAssets(assets: Asset[]) {
+    return new Promise((res, rej) => {
+      assets.forEach((asset) => {
+      });
+    });
+  }
 
   async setupCanvas(canvasProps: CanvasProps) {
     this.canvas = document.createElement("canvas");
