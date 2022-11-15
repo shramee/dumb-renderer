@@ -14,23 +14,23 @@ interface CanvasProps {
   bg?: string;
 }
 
+type TransformationArr = readonly [number, number, number, number, number, number];
+
 /**
  * Asset states can render a new object (image)
  * or apply some transformation to base asset image
  */
 interface AssetState {
   src?: string;
-  transform?: string;
+  transform?: TransformationArr;
 }
 
 interface Asset {
   id: string;
   src: string;
-  size?: {
-    w: number;
-    h: number;
-  };
-  transform?: string;
+  w?: number;
+  h?: number;
+  transform?: TransformationArr;
   states?: {
     [key: string]: string | AssetState;
   };
@@ -42,12 +42,30 @@ interface Asset {
  */
 interface LoadedAssetState {
   img: HTMLImageElement;
-  transform?: string;
+  transform?: TransformationArr;
+  w?: number;
+  h?: number;
 }
 
-interface LoadedAsset {
+interface RenderAsset {
   id: string;
+  state?: string;
+  x: number;
+  y: number;
+  transform?: TransformationArr;
+  h?: number;
+  w?: number;
+}
+
+interface RenderableAssetState {
   img: HTMLImageElement;
+  transform?: TransformationArr;
+  h: number;
+  w: number;
+}
+
+interface LoadedAsset extends RenderableAssetState {
+  id: string;
   states: {
     [key: string]: LoadedAssetState;
   };
@@ -67,10 +85,11 @@ interface LoadedAsset {
  */
 class DumbRenderer {
   canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D | null;
+  ctx: CanvasRenderingContext2D;
   bg: string;
-  baseObjects: {} = [];
+  baseObjects: RenderAsset[] = [];
   assets: { [key: string]: LoadedAsset } = {};
+  dummyImg: HTMLImageElement = new Image();
 
   loadAssets(assets: Asset[]) {
     return new Promise((res, rej) => {
@@ -82,11 +101,15 @@ class DumbRenderer {
           if (imagesLoaded === imagesToLoad) res(true);
         }, 1);
       };
-      const fnLoadAsset = (src) => {
+      const fnLoadAsset = (src, w_hObject) => {
         imagesToLoad++;
         const img = new Image();
         img.src = src;
-        img.onload = assetLoaded;
+        img.onload = () => {
+          assetLoaded();
+          w_hObject.h = w_hObject.h || img.height;
+          w_hObject.w = w_hObject.w || img.width;
+        };
         return img;
       };
 
@@ -94,18 +117,18 @@ class DumbRenderer {
     });
   }
 
-  prepareAsset(
-    loadAsset: (src: string) => HTMLImageElement
-  ): (a: Asset) => void {
-    return ({ id, src, states }) => {
-      const baseImg = loadAsset(src);
+  prepareAsset(loadAsset: (src: string, w_hObj: {}) => HTMLImageElement): (a: Asset) => void {
+    return ({ id, src, states, w, h }) => {
       // Load base image
       const loadedAsset: LoadedAsset = {
+        w: w || 0, // Use image size if not specified
+        h: h || 0, // Use image size if not specified
         id,
-        img: baseImg,
+        img: this.dummyImg,
         states: {},
       };
-
+      const baseImg = loadAsset(src, loadedAsset);
+      loadedAsset.img = baseImg;
       // Load state images
       if (states) {
         Object.keys(states).forEach((state) => {
@@ -114,14 +137,16 @@ class DumbRenderer {
 
           if (typeof states[state] === "string") {
             stateData = {
+              // @ts-ignore: states[state] is definitely string at this point
               src: states[state],
             };
           } else {
-            stateData = states[state];
+            // @ts-ignore: states[state] is definitely AssetState at this point
+            stateData = states[state]; //
           }
 
           if (stateData.src) {
-            stateImg = loadAsset(stateData.src);
+            stateImg = loadAsset(stateData.src, {});
           }
           loadedAsset.states[state] = {
             img: stateImg,
@@ -143,14 +168,73 @@ class DumbRenderer {
 
     document.body.appendChild(this.canvas);
 
-    this.ctx = this.canvas.getContext("2d");
+    const ctx = this.canvas.getContext("2d");
+
+    if (ctx) this.ctx = ctx;
     this.clearCanvas();
   }
 
   clearCanvas() {
-    if (!this.ctx) throw new Error("Failed to set up context.");
+    if (!this.ctx) throw new Error("Failed to get Canvas context, did you setupCanvas?");
     this.ctx.fillStyle = this.bg;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  baseRender(objects: RenderAsset[]) {
+    this.baseObjects = objects;
+  }
+
+  locateAssetImageToRender(assetToLocate: RenderAsset): RenderableAssetState | null {
+    const { id, state } = assetToLocate;
+    const asset: LoadedAsset = this.assets[id];
+    if (asset) {
+      let renderableAssetState = { ...asset };
+      if (state && asset.states[state]) {
+        renderableAssetState = {
+          ...renderableAssetState,
+          ...asset.states[state],
+        };
+      }
+      return renderableAssetState;
+    }
+
+    return null;
+  }
+
+  render(objects: RenderAsset[]) {
+    this.clearCanvas();
+    this.baseObjects.forEach((asset) => this.renderAsset(asset));
+    objects.forEach((asset) => this.renderAsset(asset));
+  }
+
+  renderAsset(render: RenderAsset) {
+    const renderable: RenderableAssetState | null = this.locateAssetImageToRender(render);
+
+    if (renderable) {
+      console.log(renderable);
+      if (renderable.transform) {
+        console.log(this.ctx.getTransform());
+        console.log(renderable.transform);
+        this.ctx.translate(render.x, render.y);
+        this.ctx.transform(...renderable.transform);
+        console.log(this.ctx.getTransform());
+        this.ctx.drawImage(renderable.img, 0, 0, renderable.w, renderable.h);
+        this.ctx.resetTransform();
+      } else {
+        this.ctx.drawImage(renderable.img, render.x, render.y, renderable.w, renderable.h);
+      }
+    } else {
+      this.ctx.fillStyle = this.bg;
+      this.ctx.ellipse(
+        render.x,
+        render.y,
+        render.w || 50,
+        render.h || 50,
+        Math.PI / 4,
+        0,
+        2 * Math.PI
+      );
+    }
   }
 }
 
