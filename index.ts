@@ -1,18 +1,45 @@
+/**
+ * Asset states can render a new object (image)
+ * or apply some transformation to base asset image
+ */
+interface AssetState {
+  src?: string;
+  transform?: string;
+}
+
 interface Asset {
   id: string;
-  url: string;
-  states?: { [key: string]: string };
+  src: string;
+  size: {
+    w: number;
+    h: number;
+  };
+  transform?: string;
+  states?: {
+    [key: string]: string | AssetState;
+  };
+}
+
+/**
+ * Asset states can render a new object (image)
+ * or apply some transformation to base asset image
+ */
+interface LoadedAssetState {
+  img: HTMLImageElement;
+  transform?: string;
 }
 
 interface LoadedAsset {
   id: string;
   img: HTMLImageElement;
-  states?: { [key: string]: HTMLImageElement };
+  states: {
+    [key: string]: LoadedAssetState;
+  };
 }
 
 interface CanvasProps {
-  h: number;
-  w: number;
+  h?: number;
+  w?: number;
 }
 interface DumbRendererConstructor {
   new (): DumbRenderer;
@@ -39,7 +66,7 @@ declare global {
 class DumbRenderer {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D | null;
-  assets: { [key: string]: LoadedAsset };
+  assets: { [key: string]: LoadedAsset } = {};
 
   loadAssets(assets: Asset[]) {
     return new Promise((res, rej) => {
@@ -66,29 +93,45 @@ class DumbRenderer {
   prepareAsset(
     loadAsset: (src: string) => HTMLImageElement
   ): (a: Asset) => void {
-    return ({ id, url, states }) => {
+    return ({ id, src, states }) => {
+      const baseImg = loadAsset(src);
       // Load base image
-      this.assets[id] = {
+      const loadedAsset: LoadedAsset = {
         id,
-        img: loadAsset(url),
+        img: baseImg,
         states: {},
       };
 
       // Load state images
       if (states) {
         Object.keys(states).forEach((state) => {
-          const url = states[state];
-          this.assets[id][state] = loadAsset(url);
+          let stateData: AssetState;
+
+          if (typeof states[state] === "string") {
+            stateData = {
+              src: states[state],
+            };
+          } else {
+            stateData = states[state];
+          }
+
+          if (stateData.src)
+            loadedAsset.states[state] = {
+              img: loadAsset(stateData.src),
+              transform: stateData.transform,
+            };
         });
       }
+
+      this.assets[id] = loadedAsset;
     };
   }
 
   async setupCanvas(canvasProps: CanvasProps) {
     this.canvas = document.createElement("canvas");
     this.canvas.id = "game";
-    this.canvas.width = canvasProps.w;
-    this.canvas.height = canvasProps.h;
+    this.canvas.width = canvasProps.w || 800;
+    this.canvas.height = canvasProps.h || 450;
 
     document.body.appendChild(this.canvas);
 
