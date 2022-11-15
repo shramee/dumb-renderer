@@ -2,9 +2,9 @@
   "name": "dumb-renderer",
   "version": "0.1.0",
   "description": "A dumb HTML5 canvas renderer",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "tsc index.ts -w",
+    "start": "tsup index.ts --format esm,cjs,iife --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/shramee/dumb-renderer#readme",
   "devDependencies": {
-    "typescript": "^4.8.4"
+    "tsup": "^6.5.0"
   }
 }
