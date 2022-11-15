@@ -106,6 +106,7 @@ class DumbRenderer {
       if (states) {
         Object.keys(states).forEach((state) => {
           let stateData: AssetState;
+          let stateImg = baseImg;
 
           if (typeof states[state] === "string") {
             stateData = {
@@ -115,11 +116,13 @@ class DumbRenderer {
             stateData = states[state];
           }
 
-          if (stateData.src)
-            loadedAsset.states[state] = {
-              img: loadAsset(stateData.src),
-              transform: stateData.transform,
-            };
+          if (stateData.src) {
+            stateImg = loadAsset(stateData.src);
+          }
+          loadedAsset.states[state] = {
+            img: stateImg,
+            transform: stateData.transform,
+          };
         });
       }
 
