@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "tsup index.ts --format esm,cjs,iife --watch",
+    "demo": "parcel demo/index.html --dist-dir demo-build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,6 +24,7 @@
   },
   "homepage": "https://github.com/shramee/dumb-renderer#readme",
   "devDependencies": {
+    "parcel": "^2.8.0",
     "tsup": "^6.5.0"
   }
 }

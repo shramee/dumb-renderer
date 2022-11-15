@@ -14,7 +14,6 @@ interface CanvasProps {
   h: number;
   w: number;
 }
-
 interface DumbRendererConstructor {
   new (): DumbRenderer;
 }
