@@ -1,3 +1,19 @@
+interface DumbRendererConstructor {
+  new (): DumbRenderer;
+}
+
+declare global {
+  interface Window {
+    DumbRenderer: DumbRendererConstructor;
+  }
+}
+
+interface CanvasProps {
+  h?: number;
+  w?: number;
+  bg?: string;
+}
+
 /**
  * Asset states can render a new object (image)
  * or apply some transformation to base asset image
@@ -10,7 +26,7 @@ interface AssetState {
 interface Asset {
   id: string;
   src: string;
-  size: {
+  size?: {
     w: number;
     h: number;
   };
@@ -37,20 +53,6 @@ interface LoadedAsset {
   };
 }
 
-interface CanvasProps {
-  h?: number;
-  w?: number;
-}
-interface DumbRendererConstructor {
-  new (): DumbRenderer;
-}
-
-declare global {
-  interface Window {
-    DumbRenderer: DumbRendererConstructor;
-  }
-}
-
 /**
  * Gets game ID from the URL.
  * Queries game data for the game ID.
@@ -66,6 +68,8 @@ declare global {
 class DumbRenderer {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D | null;
+  bg: string;
+  baseObjects: {} = [];
   assets: { [key: string]: LoadedAsset } = {};
 
   loadAssets(assets: Asset[]) {
@@ -130,7 +134,8 @@ class DumbRenderer {
     };
   }
 
-  async setupCanvas(canvasProps: CanvasProps) {
+  setupCanvas(canvasProps: CanvasProps) {
+    this.bg = canvasProps.bg || "#2c3e50";
     this.canvas = document.createElement("canvas");
     this.canvas.id = "game";
     this.canvas.width = canvasProps.w || 800;
@@ -139,6 +144,13 @@ class DumbRenderer {
     document.body.appendChild(this.canvas);
 
     this.ctx = this.canvas.getContext("2d");
+    this.clearCanvas();
+  }
+
+  clearCanvas() {
+    if (!this.ctx) throw new Error("Failed to set up context.");
+    this.ctx.fillStyle = this.bg;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 }
 
