@@ -2,8 +2,9 @@
   const renderer = new DumbRenderer();
 
   renderer.setupCanvas({
-    w: 800,
-    h: 450,
+    w: 1024,
+    h: 576,
+    bg: "#0cf",
   });
 
   const assets = {
