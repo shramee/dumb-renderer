@@ -15,6 +15,16 @@ interface CanvasProps {
   w: number;
 }
 
+interface DumbRendererConstructor {
+  new (): DumbRenderer;
+}
+
+declare global {
+  interface Window {
+    DumbRenderer: DumbRendererConstructor;
+  }
+}
+
 /**
  * Gets game ID from the URL.
  * Queries game data for the game ID.
@@ -32,17 +42,47 @@ class DumbRenderer {
   ctx: CanvasRenderingContext2D | null;
   assets: { [key: string]: LoadedAsset };
 
-  async loadImage(imageUrl) {
-    var img = new Image();
-    img.src = imageUrl;
-    return img;
+  loadAssets(assets: Asset[]) {
+    return new Promise((res, rej) => {
+      let imagesToLoad = 0;
+      let imagesLoaded = 0;
+      const assetLoaded = () => {
+        imagesLoaded++;
+        setTimeout(() => {
+          if (imagesLoaded === imagesToLoad) res(true);
+        }, 1);
+      };
+      const fnLoadAsset = (src) => {
+        imagesToLoad++;
+        const img = new Image();
+        img.src = src;
+        img.onload = assetLoaded;
+        return img;
+      };
+
+      assets.forEach(this.prepareAsset(fnLoadAsset));
+    });
   }
 
-  async loadAssets(assets: Asset[]) {
-    return new Promise((res, rej) => {
-      assets.forEach((asset) => {
-      });
-    });
+  prepareAsset(
+    loadAsset: (src: string) => HTMLImageElement
+  ): (a: Asset) => void {
+    return ({ id, url, states }) => {
+      // Load base image
+      this.assets[id] = {
+        id,
+        img: loadAsset(url),
+        states: {},
+      };
+
+      // Load state images
+      if (states) {
+        Object.keys(states).forEach((state) => {
+          const url = states[state];
+          this.assets[id][state] = loadAsset(url);
+        });
+      }
+    };
   }
 
   async setupCanvas(canvasProps: CanvasProps) {
@@ -57,4 +97,8 @@ class DumbRenderer {
   }
 }
 
-new DumbRenderer();
+if (window) {
+  window.DumbRenderer = DumbRenderer;
+}
+
+export default DumbRenderer;

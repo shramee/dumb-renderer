@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -34,6 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+exports.__esModule = true;
 /**
  * Gets game ID from the URL.
  * Queries game data for the game ID.
@@ -49,33 +51,46 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var DumbRenderer = /** @class */ (function () {
     function DumbRenderer() {
     }
-    DumbRenderer.prototype.loadImage = function (imageUrl) {
-        return __awaiter(this, void 0, void 0, function () {
-            var img;
-            return __generator(this, function (_a) {
-                img = new Image();
-                img.src = imageUrl;
-                return [2 /*return*/, img];
-            });
+    DumbRenderer.prototype.loadAssets = function (assets) {
+        var _this = this;
+        return new Promise(function (res, rej) {
+            var imagesToLoad = 0;
+            var imagesLoaded = 0;
+            var assetLoaded = function () {
+                imagesLoaded++;
+                setTimeout(function () {
+                    if (imagesLoaded === imagesToLoad)
+                        res(true);
+                }, 1);
+            };
+            var fnLoadAsset = function (src) {
+                imagesToLoad++;
+                var img = new Image();
+                img.src = src;
+                img.onload = assetLoaded;
+                return img;
+            };
+            assets.forEach(_this.prepareAsset(fnLoadAsset));
         });
     };
-    DumbRenderer.prototype.loadAssets = function (assets) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (res, rej) {
-                        // let imagesToLoad = 0;
-                        // const loadAsset = (imgUrl) => {
-                        //   imagesToLoad++;
-                        //   const img = new Image();
-                        //   img.src = imgUrl;
-                        //   return img;
-                        // };
-                        assets.forEach(function (asset) {
-                            // loadAsset(asset.url);
-                        });
-                    })];
-            });
-        });
+    DumbRenderer.prototype.prepareAsset = function (loadAsset) {
+        var _this = this;
+        return function (_a) {
+            var id = _a.id, url = _a.url, states = _a.states;
+            // Load base image
+            _this.assets[id] = {
+                id: id,
+                img: loadAsset(url),
+                states: {}
+            };
+            // Load state images
+            if (states) {
+                Object.keys(states).forEach(function (state) {
+                    var url = states[state];
+                    _this.assets[id][state] = loadAsset(url);
+                });
+            }
+        };
     };
     DumbRenderer.prototype.setupCanvas = function (canvasProps) {
         return __awaiter(this, void 0, void 0, function () {
@@ -92,4 +107,7 @@ var DumbRenderer = /** @class */ (function () {
     };
     return DumbRenderer;
 }());
-new DumbRenderer();
+if (window) {
+    window.DumbRenderer = DumbRenderer;
+}
+exports["default"] = DumbRenderer;
